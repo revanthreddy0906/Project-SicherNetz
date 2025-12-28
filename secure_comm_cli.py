@@ -14,9 +14,6 @@ CLIENT_FILE = os.path.join(BASE_DIR, "client", "client.py")
 PID_FILE = "/tmp/sc_server.pid"
 
 
-def is_server_environment():
-    return os.path.exists("admin_setup.py")
-
 def connect():
     if not os.path.exists(PID_FILE):
         print("❌ Server is not running. Use: sc start")
@@ -45,8 +42,7 @@ def start():
         print("⚠️ secure-comm server is already running")
         return
 
-    if not is_server_environment():
-    	print("⚠️ Warning: sc start is intended to be run on the server (EC2/admin machine).")
+    print("⚠️ Note: sc start should be run only on the central server (EC2/admin machine).")
 
     process = subprocess.Popen(
         ["python3", SERVER_FILE],
@@ -58,6 +54,7 @@ def start():
         f.write(str(process.pid))
 
     print(f"🟢 secure-comm server started (PID {process.pid})")
+
 
 def stop():
     if not os.path.exists(PID_FILE):
