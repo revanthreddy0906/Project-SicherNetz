@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 "$(dirname "$0")/secure_comm_cli.py" "$@"
+python3 /usr/local/secure-comm/secure_comm_cli.py "$@"
