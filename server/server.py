@@ -1,5 +1,6 @@
 import socket
 import ssl
+import os
 import threading
 from db import init_db, authenticate
 
@@ -9,11 +10,14 @@ PORT = 8443
 # -------- INIT DB --------
 init_db()
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CERT_DIR = os.path.join(BASE_DIR, "..", "certs")
+
 # -------- TLS CONTEXT --------
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.load_cert_chain(
-    certfile="../certs/server.crt",
-    keyfile="../certs/server.key"
+    certfile=os.path.join(CERT_DIR, "server.crt"),
+    keyfile=os.path.join(CERT_DIR, "server.key")
 )
 
 # -------- GROUP SESSIONS --------

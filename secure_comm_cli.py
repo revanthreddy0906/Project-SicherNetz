@@ -6,9 +6,36 @@ import os
 import signal
 
 
-PID_FILE = "/tmp/sc_server.pid"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SERVER_FILE = os.path.join(BASE_DIR, "server.py")
+
+SERVER_FILE = os.path.join(BASE_DIR, "server", "server.py")
+CLIENT_FILE = os.path.join(BASE_DIR, "client", "client.py")
+
+PID_FILE = "/tmp/sc_server.pid"
+
+
+def connect():
+    if not os.path.exists(PID_FILE):
+        print("❌ Server is not running. Use: sc start")
+        return
+
+    try:
+        with open(PID_FILE, "r") as f:
+            pid = int(f.read())
+
+        # Check if process actually exists
+        os.kill(pid, 0)
+
+    except ProcessLookupError:
+        print("❌ Server PID is stale. Restart the server using: sc start")
+        return
+
+    except Exception as e:
+        print(f"❌ Unable to verify server state: {e}")
+        return
+
+    subprocess.run(["python3", CLIENT_FILE])
+
 
 def start():
     if os.path.exists(PID_FILE):
@@ -80,10 +107,12 @@ def main():
     	stop()
     elif command == "status":
     	status()
+    elif command == "connect":
+    	connect()
     elif command == "help":
     	show_help()
     else:
-    	print(f"Command '{command}' not implemented yet")	
+    	print(f"Command '{command}' not implemented yet")
 
 
 if __name__ == "__main__":
