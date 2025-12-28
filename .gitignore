@@ -6,3 +6,4 @@ __pycache__/
 *.key
 logs/
 certs/
+.DS_Store
