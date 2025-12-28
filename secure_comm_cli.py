@@ -1,9 +1,29 @@
 #!/usr/bin/env python3
 
 import sys
+import subprocess
 import os
 
 PID_FILE = "/tmp/sc_server.pid"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SERVER_FILE = os.path.join(BASE_DIR, "server.py")
+
+def start():
+    if os.path.exists(PID_FILE):
+        print("⚠️ secure-comm server is already running")
+        return
+
+    process = subprocess.Popen(
+        ["python3", SERVER_FILE],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+
+    with open(PID_FILE, "w") as f:
+        f.write(str(process.pid))
+
+    print(f"🟢 secure-comm server started (PID {process.pid})")
+
 
 def status():
     if os.path.exists(PID_FILE):
@@ -30,13 +50,15 @@ def main():
 
     command = sys.argv[1]
 
-    if command == "status":
-   	 status()
+    if command == "start":
+    	start()
+    elif command == "status":
+    	status()
     elif command == "help":
-   	 show_help()
+    	show_help()
     else:
-   	 print(f"Command '{command}' not implemented yet")
-
+    	print(f"Command '{command}' not implemented yet")
 	
+
 if __name__ == "__main__":
     main()
