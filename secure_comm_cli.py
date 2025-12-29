@@ -5,6 +5,8 @@ import subprocess
 import os
 import signal
 
+CONFIG_DIR = os.path.expanduser("~/.secure-comm")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
