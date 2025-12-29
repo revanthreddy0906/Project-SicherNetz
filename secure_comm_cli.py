@@ -36,6 +36,40 @@ def write_config(key, value):
         for k, v in config.items():
             f.write(f"{k}={v}\n")
 
+def config_cmd(args):
+    if not args:
+        print("Usage:")
+        print("  sc config set <key> <value>")
+        print("  sc config show")
+        print("  sc config reset")
+        return
+
+    action = args[0]
+
+    if action == "set" and len(args) == 3:
+        key = args[1]
+        value = args[2]
+        write_config(key, value)
+        print(f"✔ Config set: {key}={value}")
+
+    elif action == "show":
+        config = read_config()
+        if not config:
+            print("No config set.")
+            return
+        for k, v in config.items():
+            print(f"{k}={v}")
+
+    elif action == "reset":
+        if os.path.exists(CONFIG_FILE):
+            os.remove(CONFIG_FILE)
+            print("✔ Config reset")
+        else:
+            print("No config to reset.")
+
+    else:
+        print("Invalid config command.")
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -130,6 +164,7 @@ Usage:
   sc stop       Stop secure-comm server
   sc status     Show server status
   sc connect    Connect client
+  sc config     Configure the Server
   sc help       Show this help
 """)
 
@@ -139,6 +174,8 @@ def main():
         return
 
     command = sys.argv[1]
+    args = sys.argv[2:]
+
     server_ip = None
 
     if "--server" in sys.argv:
@@ -159,6 +196,8 @@ def main():
         connect(server_ip)
     elif command == "help":
         show_help()
+    elif command == "config":
+    	config_cmd(args)
     else:
         print(f"Command '{command}' not implemented yet")
 
