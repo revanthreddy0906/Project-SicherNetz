@@ -2,8 +2,10 @@ import socket
 import ssl
 import threading
 import sys
+import os
 
-SERVER_HOST = "54.80.13.67"   # your EC2 public IP
+
+SERVER_HOST = os.environ.get("SC_SERVER_HOST", "127.0.0.1")   # your EC2 public IP
 SERVER_PORT = 8443
 
 def receive_messages(sock):

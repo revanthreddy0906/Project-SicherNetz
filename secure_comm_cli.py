@@ -14,7 +14,7 @@ CLIENT_FILE = os.path.join(BASE_DIR, "client", "client.py")
 PID_FILE = "/tmp/sc_server.pid"
 
 
-def connect():
+def connect(server_ip=None):
     if not os.path.exists(PID_FILE):
         print("❌ Server is not running. Use: sc start")
         return
@@ -34,7 +34,12 @@ def connect():
         print(f"❌ Unable to verify server state: {e}")
         return
 
-    subprocess.run(["python3", CLIENT_FILE])
+    env = os.environ.copy()
+
+    if server_ip:
+    	env["SC_SERVER_HOST"] = server_ip
+
+    subprocess.run(["python3", CLIENT_FILE], env=env)
 
 
 def start():
@@ -103,19 +108,29 @@ def main():
         return
 
     command = sys.argv[1]
+    server_ip = None
+
+    if "--server" in sys.argv:
+        idx = sys.argv.index("--server")
+        try:
+            server_ip = sys.argv[idx + 1]
+        except IndexError:
+            print("❌ Missing IP after --server")
+            return
 
     if command == "start":
-    	start()
+        start()
     elif command == "stop":
-    	stop()
+        stop()
     elif command == "status":
-    	status()
+        status()
     elif command == "connect":
-    	connect()
+        connect(server_ip)
     elif command == "help":
-    	show_help()
+        show_help()
     else:
-    	print(f"Command '{command}' not implemented yet")
+        print(f"Command '{command}' not implemented yet")
+
 
 
 if __name__ == "__main__":
