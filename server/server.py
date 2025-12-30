@@ -1,6 +1,8 @@
 import socket
 import ssl
 import os
+import signal
+import sys
 import threading
 from db import init_db, authenticate
 
@@ -100,15 +102,27 @@ def handle_client(conn, addr):
         conn.close()
         print(f"[-] Connection closed {addr}")
 
+def shutdown_handler(signum, frame):
+    print("[SYSTEM] Shutdown signal received. Stopping server...")
+    try:
+        server_socket.close()
+    except Exception:
+        pass
+    sys.exit(0)
+
+
 def main():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind((HOST, PORT))
-    sock.listen(5)
+    signal.signal(signal.SIGTERM, shutdown_handler)
+    signal.signal(signal.SIGINT, shutdown_handler)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((HOST, PORT))
+    server_socket.listen(5)
+	
 
     print(f"[SECURE SERVER] Listening on port {PORT}")
 
     while True:
-        client, addr = sock.accept()
+        client, addr = server_socket.accept()
         secure_conn = context.wrap_socket(client, server_side=True)
         threading.Thread(
             target=handle_client,
