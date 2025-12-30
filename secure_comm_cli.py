@@ -108,22 +108,7 @@ def connect(server_ip=None):
 
 
 def start():
-    if os.path.exists(PID_FILE):
-        print("⚠️ secure-comm server is already running")
-        return
-
-    print("⚠️ Note: sc start should be run only on the central server (EC2/admin machine).")
-
-    process = subprocess.Popen(
-        ["python3", SERVER_FILE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
-    )
-
-    with open(PID_FILE, "w") as f:
-        f.write(str(process.pid))
-
-    print(f"🟢 secure-comm server started (PID {process.pid})")
+    print("ℹ️ Server is managed on the admin machine.\n Please Contact the Admin for Access.")
 
 
 def stop():

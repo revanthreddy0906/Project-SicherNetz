@@ -117,7 +117,7 @@ def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
     server_socket.listen(5)
-	
+
 
     print(f"[SECURE SERVER] Listening on port {PORT}")
 
