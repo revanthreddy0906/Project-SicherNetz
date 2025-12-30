@@ -3,7 +3,7 @@ import ssl
 import threading
 import sys
 
-SERVER_HOST = "54.80.13.67"   # your EC2 public IP
+SERVER_HOST = "100.31.44.180"   # your EC2 public IP
 SERVER_PORT = 8443
 
 def receive_messages(sock):
