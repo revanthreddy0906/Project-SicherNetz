@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 import threading
+from db import verify_password
 from db import init_db, authenticate
 
 HOST = "0.0.0.0"
