@@ -43,8 +43,8 @@ def verify_password(password: str, stored_password: str) -> bool:
             stored_password.encode()
         )
 
-    # legacy fallback (temporary)
-    return password == stored_password
+    # legacy SHA256
+    return stored_password == hashlib.sha256(password.encode()).hexdigest()
 
 
 def add_user(username, password_hash, group_name):
@@ -66,32 +66,14 @@ def authenticate(username, password):
         (username,)
     )
     row = c.fetchone()
+    conn.close()
 
     if not row:
-        conn.close()
         return None
 
-    stored_password, group = row
+    stored_hash, group = row
 
-    # bcrypt user
-    if stored_password.startswith("$2"):
-        if not verify_password(password, stored_password):
-            conn.close()
-            return None
+    if verify_password(password, stored_hash):
+        return group
 
-    # legacy user → verify then migrate
-    else:
-        if password != stored_password:
-            conn.close()
-            return None
-
-        # 🔁 MIGRATE PASSWORD
-        new_hash = hash_password(password)
-        c.execute(
-            "UPDATE users SET password_hash=? WHERE username=?",
-            (new_hash, username)
-        )
-        conn.commit()
-
-    conn.close()
-    return group
+    return None

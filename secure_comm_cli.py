@@ -80,32 +80,20 @@ PID_FILE = "/tmp/sc_server.pid"
 
 
 def connect(server_ip=None):
-    if not os.path.exists(PID_FILE):
-        print("❌ Server is not running. Use: sc start")
-        return
-
-    try:
-        with open(PID_FILE, "r") as f:
-            pid = int(f.read())
-
-        # Check if process actually exists
-        os.kill(pid, 0)
-
-    except ProcessLookupError:
-        print("❌ Server PID is stale. Restart the server using: sc start")
-        return
-
-    except Exception as e:
-        print(f"❌ Unable to verify server state: {e}")
-        return
-
     env = os.environ.copy()
 
     if server_ip:
-    	env["SC_SERVER_HOST"] = server_ip
+        env["SC_SERVER_HOST"] = server_ip
 
-    subprocess.run(["python3", CLIENT_FILE], env=env)
-
+    # Client is responsible ONLY for attempting connection
+    try:
+        subprocess.run(
+            ["python3", CLIENT_FILE],
+            env=env,
+            check=True
+        )
+    except subprocess.CalledProcessError:
+        print("❌ Unable to connect to server. Is it running and reachable?")
 
 def start():
     print("ℹ️ Server is managed on the admin machine.\n Please Contact the Admin for Access.")
