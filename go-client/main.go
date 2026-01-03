@@ -11,13 +11,19 @@ import (
 /* ---------- Styles ---------- */
 
 var (
-	leftStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("252")).
-		Align(lipgloss.Left)
+	leftText = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("252"))
 
-	rightStyle = lipgloss.NewStyle().
+	rightText = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("42"))
+
+	leftHeader = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("39")).
+		Bold(true)
+
+	rightHeader = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("42")).
-		Align(lipgloss.Right)
+		Bold(true)
 
 	systemStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240")).
@@ -25,16 +31,6 @@ var (
 
 	inputStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("205"))
-
-	leftHeaderStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("39")).
-		Bold(true).
-		Align(lipgloss.Left)
-
-	rightHeaderStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42")).
-		Bold(true).
-		Align(lipgloss.Right)
 )
 
 /* ---------- Message Model ---------- */
@@ -42,6 +38,7 @@ var (
 type chatMessage struct {
 	author string
 	text   string
+	self   bool
 	sys    bool
 }
 
@@ -90,6 +87,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.messages = append(m.messages, chatMessage{
 					author: m.username,
 					text:   m.input,
+					self:   true,
 				})
 				m.input = ""
 			}
@@ -120,7 +118,7 @@ func (m model) View() string {
 
 	for _, msg := range m.messages {
 
-		// SYSTEM MESSAGE
+		// System messages
 		if msg.sys {
 			chat.WriteString(
 				systemStyle.
@@ -131,55 +129,51 @@ func (m model) View() string {
 			continue
 		}
 
-		isSelf := msg.author == m.username
-
-		// AUTHOR HEADER
+		// Author header (only when author changes)
 		if msg.author != lastAuthor {
-			header := "[" + msg.author + "]"
+			header := "[" + msg.author + "]\n"
 
-			if isSelf {
+			if msg.self {
 				chat.WriteString(
-					rightHeaderStyle.
-						Width(maxWidth).
-						Render(header) + "\n",
+					lipgloss.PlaceHorizontal(
+						maxWidth,
+						lipgloss.Right,
+						rightHeader.Render(header),
+					),
 				)
 			} else {
-				chat.WriteString(
-					leftHeaderStyle.
-						Width(maxWidth).
-						Render(header) + "\n",
-				)
+				chat.WriteString(leftHeader.Render(header))
 			}
 		}
 
-		// MESSAGE BODY
-		if isSelf {
+		// Message body
+		if msg.self {
 			chat.WriteString(
-				rightStyle.
-					Width(maxWidth).
-					Render(msg.text) + "\n",
+				lipgloss.PlaceHorizontal(
+					maxWidth,
+					lipgloss.Right,
+					rightText.Render(msg.text),
+				) + "\n\n",
 			)
 		} else {
-			chat.WriteString(
-				leftStyle.
-					Width(maxWidth).
-					Render(msg.text) + "\n",
-			)
+			chat.WriteString(leftText.Render(msg.text) + "\n\n")
 		}
 
 		lastAuthor = msg.author
 	}
 
-	chat.WriteString("\n")
 	chat.WriteString(inputStyle.Render("> " + m.input))
-
 	return chat.String()
 }
 
 /* ---------- Main ---------- */
 
 func main() {
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(
+		initialModel(),
+		tea.WithAltScreen(),
+	)
+
 	if err := p.Start(); err != nil {
 		fmt.Println("Error:", err)
 	}
