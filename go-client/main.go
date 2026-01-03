@@ -25,6 +25,16 @@ var (
 
 	inputStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("205"))
+
+	leftHeaderStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("39")).
+		Bold(true).
+		Align(lipgloss.Left)
+
+	rightHeaderStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("42")).
+		Bold(true).
+		Align(lipgloss.Right)
 )
 
 /* ---------- Message Model ---------- */
@@ -49,7 +59,7 @@ type model struct {
 
 func initialModel() model {
 	return model{
-		username: "You", // temporary
+		username: "You",
 		messages: []chatMessage{},
 		input:    "",
 	}
@@ -106,32 +116,58 @@ func (m model) View() string {
 	var chat strings.Builder
 	maxWidth := m.width - 4
 
+	var lastAuthor string
+
 	for _, msg := range m.messages {
 
+		// SYSTEM MESSAGE
 		if msg.sys {
 			chat.WriteString(
 				systemStyle.
 					Width(maxWidth).
-					Render("• "+msg.text) + "\n\n",
+					Render("• " + msg.text) + "\n\n",
 			)
+			lastAuthor = ""
 			continue
 		}
 
-		content := fmt.Sprintf("[%s]\n%s", msg.author, msg.text)
+		isSelf := msg.author == m.username
 
-		if msg.author == m.username {
+		// AUTHOR HEADER
+		if msg.author != lastAuthor {
+			header := "[" + msg.author + "]"
+
+			if isSelf {
+				chat.WriteString(
+					rightHeaderStyle.
+						Width(maxWidth).
+						Render(header) + "\n",
+				)
+			} else {
+				chat.WriteString(
+					leftHeaderStyle.
+						Width(maxWidth).
+						Render(header) + "\n",
+				)
+			}
+		}
+
+		// MESSAGE BODY
+		if isSelf {
 			chat.WriteString(
 				rightStyle.
 					Width(maxWidth).
-					Render(content) + "\n\n",
+					Render(msg.text) + "\n",
 			)
 		} else {
 			chat.WriteString(
 				leftStyle.
 					Width(maxWidth).
-					Render(content) + "\n\n",
+					Render(msg.text) + "\n",
 			)
 		}
+
+		lastAuthor = msg.author
 	}
 
 	chat.WriteString("\n")
