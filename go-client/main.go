@@ -88,14 +88,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case tea.KeyEnter:
-			if strings.TrimSpace(m.input) != "" {
+			clean := strings.TrimSpace(m.input)
+			if clean != "" {
 				m.messages = append(m.messages, chatMessage{
 					author: m.username,
-					text:   m.input,
+					text:   clean,
 					self:   true,
 				})
-				m.input = ""
 			}
+			m.input = ""
 
 		case tea.KeyBackspace:
 			if len(m.input) > 0 {
@@ -175,7 +176,9 @@ func (m model) View() string {
 		lastAuthor = msg.author
 	}
 
-	chat.WriteString(inputStyle.Render("> " + m.input))
+	chat.WriteString("\n")
+    chat.WriteString(inputStyle.Render("> "))
+    chat.WriteString(m.input)
 	return chat.String()
 }
 
