@@ -23,19 +23,10 @@ const (
 /* ---------- Styles ---------- */
 
 var (
-	leftText = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("252"))
-
-	rightText = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42"))
-
-	leftHeader = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("39")).
-		Bold(true)
-
-	rightHeader = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42")).
-		Bold(true)
+	leftText   = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	rightText  = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
+	leftHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true)
+	rightHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Bold(true)
 
 	systemStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("39")).
@@ -49,7 +40,7 @@ var (
 		Bold(true)
 )
 
-/* ---------- Bubble Tea Messages ---------- */
+/* ---------- Tea Messages ---------- */
 
 type serverMsg string
 type systemMsg string
@@ -69,11 +60,12 @@ type chatMessage struct {
 type model struct {
 	state appState
 
-	// auth
-	username string
-	password string
-	focus    int // 0=username, 1=password
-	authErr  string
+	// login
+	username   string
+	password   string
+	focus      int
+	authErr    string
+	connecting bool
 
 	// chat
 	messages []chatMessage
@@ -87,17 +79,14 @@ type model struct {
 /* ---------- Init ---------- */
 
 func initialModel() model {
-	return model{
-		state: stateLogin,
-		focus: 0,
-	}
+	return model{state: stateLogin}
 }
 
 func (m model) Init() tea.Cmd {
 	return nil
 }
 
-/* ---------- Network Commands ---------- */
+/* ---------- Commands ---------- */
 
 func connectAndAuthCmd(c *netclient.Client, user, pass string) tea.Cmd {
 	return func() tea.Msg {
@@ -115,7 +104,7 @@ func connectAndAuthCmd(c *netclient.Client, user, pass string) tea.Cmd {
 		}
 
 		c.Start()
-		return systemMsg("Authenticated")
+		return systemMsg("AUTH_OK")
 	}
 }
 
@@ -136,7 +125,7 @@ func listenCmd(c *netclient.Client) tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-	/* ---------- LOGIN MODE ---------- */
+	/* ---------- LOGIN ---------- */
 	if m.state == stateLogin {
 		switch msg := msg.(type) {
 
@@ -170,18 +159,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				c := netclient.NewClient()
-				m.client = c
+				m.connecting = true
+				m.authErr = ""
+				m.client = netclient.NewClient()
 
 				return m, tea.Batch(
-					connectAndAuthCmd(c, m.username, m.password),
-					listenCmd(c),
+					connectAndAuthCmd(m.client, m.username, m.password),
+					listenCmd(m.client),
 				)
 			}
 
 		case systemMsg:
-			if string(msg) == "Authenticated" {
+			if string(msg) == "AUTH_OK" {
 				m.state = stateChat
+				m.connecting = false
 				m.messages = []chatMessage{
 					{text: "You joined the group", sys: true},
 				}
@@ -189,14 +180,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case errorMsg:
+			m.connecting = false
 			m.authErr = msg.Error()
-			return m, nil
+			m.client = nil
 		}
 
 		return m, nil
 	}
 
-	/* ---------- CHAT MODE ---------- */
+	/* ---------- CHAT ---------- */
+
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
@@ -228,15 +221,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 
 		case tea.KeyCtrlC, tea.KeyEsc:
-			m.messages = append(m.messages, chatMessage{
-				text: m.username + " left the group",
-				sys:  true,
-			})
 			return m, tea.Quit
 
 		case tea.KeyEnter:
 			clean := strings.TrimSpace(m.input)
-			if clean != "" {
+			if clean != "" && m.client != nil {
 				m.messages = append(m.messages, chatMessage{
 					author: m.username,
 					text:   clean,
@@ -250,8 +239,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.input) > 0 {
 				m.input = m.input[:len(m.input)-1]
 			}
+			
 		case tea.KeySpace:
-            m.input += " "
+			m.input += " "
 
 		case tea.KeyRunes:
 			m.input += string(msg.Runes)
@@ -274,6 +264,13 @@ func (m model) loginView() string {
 	var b strings.Builder
 
 	b.WriteString("\n🔐 Secure Login\n\n")
+
+	if m.connecting {
+		b.WriteString(systemStyle.Render("● Connecting & authenticating…\n\n"))
+		
+	} else {
+		b.WriteString("\n\n")
+	}
 
 	if m.authErr != "" {
 		b.WriteString(errorStyle.Render("✗ " + m.authErr))
