@@ -27,16 +27,18 @@ var (
 		Foreground(lipgloss.Color("205"))
 )
 
-/* ---------- Model ---------- */
+/* ---------- Message Model ---------- */
 
 type chatMessage struct {
 	author string
-	text string
-	self bool
-	sys  bool
+	text   string
+	sys    bool
 }
 
+/* ---------- App Model ---------- */
+
 type model struct {
+	username string
 	messages []chatMessage
 	input    string
 	width    int
@@ -47,11 +49,9 @@ type model struct {
 
 func initialModel() model {
 	return model{
-		messages: []chatMessage{
-			{text: "user2 joined the chat", sys: true},
-			{text: "Hey! This UI looks clean 👀", self: false},
-			{text: "Yeah, much better than before!", self: true},
-		},
+		username: "You", // temporary
+		messages: []chatMessage{},
+		input:    "",
 	}
 }
 
@@ -78,9 +78,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter:
 			if strings.TrimSpace(m.input) != "" {
 				m.messages = append(m.messages, chatMessage{
-					author: "You",
+					author: m.username,
 					text:   m.input,
-					self:   true,
 				})
 				m.input = ""
 			}
@@ -100,16 +99,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	return m, nil
 }
+
 /* ---------- View ---------- */
+
 func (m model) View() string {
 	var chat strings.Builder
 	maxWidth := m.width - 4
 
 	for _, msg := range m.messages {
 
+		if msg.sys {
+			chat.WriteString(
+				systemStyle.
+					Width(maxWidth).
+					Render("• "+msg.text) + "\n\n",
+			)
+			continue
+		}
+
 		content := fmt.Sprintf("[%s]\n%s", msg.author, msg.text)
 
-		if msg.self {
+		if msg.author == m.username {
 			chat.WriteString(
 				rightStyle.
 					Width(maxWidth).
