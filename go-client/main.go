@@ -26,7 +26,7 @@ var (
 		Bold(true)
 
 	systemStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
+		Foreground(lipgloss.Color("39")).
 		Italic(true)
 
 	inputStyle = lipgloss.NewStyle().
@@ -57,8 +57,9 @@ type model struct {
 func initialModel() model {
 	return model{
 		username: "You",
-		messages: []chatMessage{},
-		input:    "",
+		messages: []chatMessage{
+			{sys: true, text: "You joined the group"},
+		},
 	}
 }
 
@@ -80,6 +81,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 
 		case tea.KeyCtrlC, tea.KeyEsc:
+			m.messages = append(m.messages, chatMessage{
+				sys:  true,
+				text: m.username + " left the group",
+			})
 			return m, tea.Quit
 
 		case tea.KeyEnter:
@@ -112,26 +117,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	var chat strings.Builder
-	maxWidth := m.width - 4
+
+	maxWidth := m.width - 6
+	if maxWidth < 20 {
+		maxWidth = 20
+	}
 
 	var lastAuthor string
 
 	for _, msg := range m.messages {
 
-		// System messages
+		// SYSTEM MESSAGE
 		if msg.sys {
 			chat.WriteString(
 				systemStyle.
 					Width(maxWidth).
-					Render("• " + msg.text) + "\n\n",
+					Render("• "+msg.text) + "\n\n",
 			)
 			lastAuthor = ""
 			continue
 		}
 
-		// Author header (only when author changes)
+		// AUTHOR HEADER (only if author changed)
 		if msg.author != lastAuthor {
-			header := "[" + msg.author + "]\n"
+			header := "[" + msg.author + "]"
 
 			if msg.self {
 				chat.WriteString(
@@ -139,14 +148,16 @@ func (m model) View() string {
 						maxWidth,
 						lipgloss.Right,
 						rightHeader.Render(header),
-					),
+					) + "\n",
 				)
 			} else {
-				chat.WriteString(leftHeader.Render(header))
+				chat.WriteString(
+					leftHeader.Render(header) + "\n",
+				)
 			}
 		}
 
-		// Message body
+		// MESSAGE BODY
 		if msg.self {
 			chat.WriteString(
 				lipgloss.PlaceHorizontal(
@@ -156,7 +167,9 @@ func (m model) View() string {
 				) + "\n\n",
 			)
 		} else {
-			chat.WriteString(leftText.Render(msg.text) + "\n\n")
+			chat.WriteString(
+				leftText.Render(msg.text) + "\n\n",
+			)
 		}
 
 		lastAuthor = msg.author
