@@ -4,7 +4,6 @@ import os
 import signal
 import sys
 import threading
-from db import verify_password
 from db import init_db, authenticate
 
 HOST = "0.0.0.0"
@@ -28,6 +27,7 @@ group_sessions = {}      # group -> list of connections
 session_users = {}       # connection -> username
 lock = threading.Lock()
 
+
 def broadcast(group, message, sender_conn=None):
     with lock:
         for conn in group_sessions.get(group, []):
@@ -37,13 +37,14 @@ def broadcast(group, message, sender_conn=None):
                 except:
                     pass
 
+
 def handle_client(conn, addr):
     print(f"[+] Connection from {addr}")
 
     try:
         # ---- RECEIVE CREDENTIALS ----
         data = conn.recv(1024).decode().strip()
-        print("[AUTH DATA]", data)
+        print(f"[AUTH] Login attempt from {addr}")
 
         try:
             username, password = data.split(":", 1)
@@ -96,12 +97,17 @@ def handle_client(conn, addr):
             )
             if group:
                 group_sessions[group].remove(conn)
-                broadcast(group, f"[SYSTEM] {session_users.get(conn)} left the group", conn)
+                broadcast(
+                    group,
+                    f"[SYSTEM] {session_users.get(conn)} left the group",
+                    conn
+                )
 
             session_users.pop(conn, None)
 
         conn.close()
         print(f"[-] Connection closed {addr}")
+
 
 def shutdown_handler(signum, frame):
     print("[SYSTEM] Shutdown signal received. Stopping server...")
@@ -115,10 +121,11 @@ def shutdown_handler(signum, frame):
 def main():
     signal.signal(signal.SIGTERM, shutdown_handler)
     signal.signal(signal.SIGINT, shutdown_handler)
+
+    global server_socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
     server_socket.listen(5)
-
 
     print(f"[SECURE SERVER] Listening on port {PORT}")
 
@@ -130,6 +137,7 @@ def main():
             args=(secure_conn, addr),
             daemon=True
         ).start()
+
 
 if __name__ == "__main__":
     main()
